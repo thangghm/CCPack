@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            asset: ccpack-windows-x64.exe
+          - os: macos-latest
+            asset: ccpack-macos-arm64.zip
+          - os: macos-26-intel
+            asset: ccpack-macos-x64.zip
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Check tag matches package version
+        shell: bash
+        run: |
+          version=$(python -c "import ccpack; print(ccpack.__version__)")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match ccpack.__version__ $version"
+            exit 1
+          fi
+
+      - name: Build
+        run: |
+          python -m pip install pyinstaller
+          python build.py
+
+      - name: Smoke test
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then bin=dist/ccpack.exe; else bin=dist/ccpack; fi
+          "$bin" --version
+          "$bin" --help
+
+      - name: Rename (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: mv dist/ccpack.exe "dist/${{ matrix.asset }}"
+
+      - name: Zip (macOS)
+        if: runner.os == 'macOS'
+        # ditto keeps the executable bit, which a plain browser download would lose
+        run: ditto -c -k dist/ccpack "dist/${{ matrix.asset }}"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.asset }}
+          path: dist/${{ matrix.asset }}
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: assets
+          merge-multiple: true
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" assets/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "CCPack $GITHUB_REF_NAME" \
+            --notes "Tải file theo hệ điều hành:
+          - Windows: \`ccpack-windows-x64.exe\`
+          - macOS Apple Silicon (M1/M2/M3…): \`ccpack-macos-arm64.zip\`
+          - macOS Intel: \`ccpack-macos-x64.zip\`
+
+          Xem README để biết cách dùng."
