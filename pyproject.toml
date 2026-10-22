@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ccpack"
+version = "0.1.0"
+description = "Pack CapCut desktop projects with all their media so they can be moved or archived"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+ccpack = "ccpack.cli:main"
+
+[tool.setuptools]
+packages = ["ccpack"]
