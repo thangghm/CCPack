@@ -1,14 +1,17 @@
-"""What we know about CapCut desktop drafts (verified on CapCut 9.6 for Windows)."""
+"""What we know about CapCut desktop drafts (verified on CapCut 9.6 for Windows and macOS)."""
 
 import json
 import os
 import subprocess
 
+from ccpack.i18n import tr
 from ccpack.paths import IS_WINDOWS
 
 # Same token in every draft; CapCut resolves it to the draft's own folder.
 PLACEHOLDER = "##_draftpath_placeholder_0E685133-18CE-45ED-8CB8-2904A212EC80_##"
 PACKED_MEDIA_DIR = "_packed_media"
+DRAFTS_FOLDER = "com.lveditor.draft"
+ROOT_META_FILE = "root_meta_info.json"  # CapCut keeps its project list here, even when empty
 META_FILE = "draft_meta_info.json"
 CONTENT_FILE = "draft_content.json"
 SETTINGS_FILE = "draft_settings"
@@ -20,12 +23,63 @@ def default_capcut_data_dir() -> str:
     if IS_WINDOWS:
         base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~/AppData/Local")
         return os.path.join(base, "CapCut", "User Data")
-    # macOS location not verified yet.
     return os.path.expanduser("~/Movies/CapCut/User Data")
 
 
 def default_drafts_dir() -> str:
-    return os.path.join(default_capcut_data_dir(), "Projects", "com.lveditor.draft")
+    return os.path.join(default_capcut_data_dir(), "Projects", DRAFTS_FOLDER)
+
+
+def _config_path() -> str:
+    if IS_WINDOWS:
+        base = os.environ.get("APPDATA") or os.path.expanduser("~/AppData/Roaming")
+    else:
+        base = os.path.expanduser("~/Library/Application Support")
+    return os.path.join(base, "ccpack", "config.json")
+
+
+def capcut_drafts_setting() -> str | None:
+    """The 'Save to' folder from CapCut's Settings → Draft. CapCut keeps it in an INI file
+    and puts drafts straight into that folder."""
+    path = os.path.join(default_capcut_data_dir(), "Config", "globalSetting")
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            for line in f:
+                key, _, value = line.partition("=")
+                if key.strip() == "currentCustomDraftPath":
+                    return value.strip().strip('"').replace("\\\\", "\\") or None
+    except OSError:
+        pass
+    return None
+
+
+def drafts_dir() -> str:
+    """Where CapCut saves drafts: its own setting, else the folder the user picked in
+    ccpack, else CapCut's default."""
+    setting = capcut_drafts_setting()
+    if setting:
+        return setting
+    try:
+        saved = load_json(_config_path()).get("drafts_dir")
+    except (ValueError, OSError, AttributeError):
+        saved = None
+    return saved if saved and os.path.isdir(saved) else default_drafts_dir()
+
+
+def save_drafts_dir(path: str):
+    config = _config_path()
+    os.makedirs(os.path.dirname(config), exist_ok=True)
+    with open(config, "w", encoding="utf-8") as f:
+        json.dump({"drafts_dir": path}, f, ensure_ascii=False, indent=2)
+
+
+def find_drafts_dir(path: str) -> str | None:
+    """Accept CapCut's drafts folder, the folder above it, or one project inside it."""
+    path = os.path.abspath(os.path.expanduser(path))
+    for candidate in (path, os.path.join(path, DRAFTS_FOLDER), os.path.dirname(path)):
+        if os.path.isfile(os.path.join(candidate, ROOT_META_FILE)) or list_drafts(candidate):
+            return candidate
+    return None
 
 
 class DraftNotFound(Exception):
@@ -37,7 +91,8 @@ def resolve_draft(name_or_path: str, drafts_dir: str) -> str:
     for candidate in (name_or_path, os.path.join(drafts_dir, name_or_path)):
         if os.path.isfile(os.path.join(candidate, META_FILE)):
             return os.path.abspath(candidate)
-    raise DraftNotFound(f"Không tìm thấy project CapCut '{name_or_path}' (đã tìm trong {drafts_dir}).")
+    raise DraftNotFound(tr(f"CapCut project '{name_or_path}' not found (looked in {drafts_dir}).",
+                           f"Không tìm thấy project CapCut '{name_or_path}' (đã tìm trong {drafts_dir})."))
 
 
 def list_drafts(drafts_dir: str) -> list[dict]:

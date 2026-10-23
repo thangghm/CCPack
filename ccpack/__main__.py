@@ -1,6 +1,7 @@
 import sys
 
 from ccpack.cli import main
+from ccpack.i18n import tr
 
 
 def _owns_console() -> bool:
@@ -24,7 +25,7 @@ if __name__ == "__main__":
         code = 130
     if pause:
         try:
-            input("\nNhấn Enter để đóng…")
+            input(tr("\nPress Enter to close…", "\nNhấn Enter để đóng…"))
         except EOFError:
             pass
     sys.exit(code)

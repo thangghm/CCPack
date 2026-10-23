@@ -5,6 +5,7 @@ import re
 from dataclasses import dataclass, field
 
 from ccpack import capcut
+from ccpack.i18n import files, tr
 from ccpack.paths import is_cloud_only
 from ccpack.rewrite import CAPCUT, FONT, INTERNAL, MEDIA, MISSING, OTHER, DraftRewriter
 
@@ -90,26 +91,34 @@ def human_size(n: float) -> str:
 def format_report(r: ScanResult) -> str:
     lines = [
         f"Project:   {r.draft_name}",
-        f"Thư mục:   {r.draft_dir}",
+        tr(f"Folder:    {r.draft_dir}", f"Thư mục:   {r.draft_dir}"),
         f"CapCut:    {r.capcut_version or '?'} (draft version {r.draft_version})",
     ]
     if r.is_open:
-        lines.append("⚠ Project đang mở trong CapCut — đóng project (về màn hình Home) trước khi pack.")
-    lines.append(f"\nMedia sẽ đóng gói: {len(r.media)} file, {human_size(r.media_size)}")
+        lines.append(tr("⚠ The project is open in CapCut. Close it (go back to the Home screen) before packing.",
+                        "⚠ Project đang mở trong CapCut — đóng project (về màn hình Home) trước khi pack."))
+    lines.append(tr(f"\nMedia to pack: {files(len(r.media))}, {human_size(r.media_size)}",
+                    f"\nMedia sẽ đóng gói: {len(r.media)} file, {human_size(r.media_size)}"))
     for m in r.media:
-        flag = "  ☁ chỉ có trên cloud, sẽ phải tải về" if m.cloud_only else ""
+        flag = tr("  ☁ cloud-only, will be downloaded", "  ☁ chỉ có trên cloud, sẽ phải tải về") if m.cloud_only else ""
         lines.append(f"  {human_size(m.size):>10}  {m.source}{flag}")
     if r.missing:
-        lines.append(f"\n✗ Không tìm thấy: {len(r.missing)} file")
+        lines.append(tr(f"\n✗ Not found: {files(len(r.missing))}", f"\n✗ Không tìm thấy: {len(r.missing)} file"))
         lines += [f"  {p}" for p in r.missing]
     if r.fonts:
-        lines.append(f"\nFont cài trên máy (người nhận cần cài, hoặc pack với --fonts): {len(r.fonts)}")
+        lines.append(tr(f"\nFonts installed on this computer (the recipient must install them, "
+                        f"or pack with --fonts): {len(r.fonts)}",
+                        f"\nFont cài trên máy (người nhận cần cài, hoặc pack với --fonts): {len(r.fonts)}"))
         for p in r.fonts:
-            lines.append(f"  {p}" + ("" if os.path.isfile(p) else "  (không có trên máy này)"))
+            lines.append(f"  {p}" + ("" if os.path.isfile(p) else tr("  (not on this computer)",
+                                                                     "  (không có trên máy này)")))
     if r.effect_ids:
-        lines.append(f"\nHiệu ứng từ thư viện CapCut (CapCut tự tải lại): {len(r.effect_ids)}")
-    lines.append(f"File nội bộ project: {r.internal_count} đường dẫn")
-    lines.append(f"File JSON sẽ sửa đường dẫn: {len(r.rewritten)}")
+        lines.append(tr(f"\nEffects from the CapCut library (CapCut downloads them again): {len(r.effect_ids)}",
+                        f"\nHiệu ứng từ thư viện CapCut (CapCut tự tải lại): {len(r.effect_ids)}"))
+    lines.append(tr(f"Paths inside the project folder: {r.internal_count}",
+                    f"File nội bộ project: {r.internal_count} đường dẫn"))
+    lines.append(tr(f"JSON files whose paths will be rewritten: {len(r.rewritten)}",
+                    f"File JSON sẽ sửa đường dẫn: {len(r.rewritten)}"))
     return "\n".join(lines)
 
 

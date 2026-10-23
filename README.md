@@ -40,8 +40,11 @@ Bấm đúp vào `ccpack`, chọn số trong menu:
 1. Đóng gói project (để gửi người khác / lưu trữ)
 2. Cài file .ccpack vào CapCut
 3. Kiểm tra file .ccpack còn nguyên vẹn
+4. Đổi thư mục project của CapCut
 0. Thoát
 ```
+
+CCPack tự dùng thư mục ở mục **Save to** trong CapCut → Settings → Draft, nên đổi nơi lưu project trong CapCut thì CCPack đổi theo. Nếu không đọc được cài đặt đó và không thấy project, CCPack sẽ hỏi thư mục (copy đường dẫn ở mục Save to rồi dán vào, hoặc kéo thư mục vào cửa sổ, rồi Enter) và nhớ cho các lần sau. Muốn đổi lại thì chọn **4**.
 
 **Người gửi**
 
@@ -72,14 +75,15 @@ ccpack unpack  file.ccpack [--name "Tên mới"] [--no-verify]
 
 - Trên Windows, đổi tên file tải về thành `ccpack.exe` (hoặc gõ đúng tên file) và chạy trong thư mục chứa nó.
 - `<tên project>` là tên hiển thị trong CapCut, hoặc đường dẫn tới thư mục project.
-- CapCut lưu project ở vị trí khác mặc định thì thêm `--drafts-dir` trước tên lệnh: `ccpack --drafts-dir "D:\CapCut Drafts" scan "<tên project>"`.
+- Dòng lệnh dùng thư mục project đã chọn trong menu, nếu chưa chọn thì dùng thư mục mặc định của CapCut. Muốn chỉ thư mục khác cho một lần chạy thì thêm `--drafts-dir` trước tên lệnh: `ccpack --drafts-dir "D:\CapCut Drafts" scan "<tên project>"`.
 - `ccpack <lệnh> --help` để xem đầy đủ tuỳ chọn.
+- Giao diện có tiếng Việt và tiếng Anh, tự chọn theo ngôn ngữ của máy. Muốn chọn khác thì thêm `--lang en` hoặc `--lang vi` (dùng được cả cho menu: `ccpack --lang en`), hoặc đặt biến môi trường `CCPACK_LANG=en`.
 
 ### Lưu ý
 
 - Hiệu ứng, transition, sticker từ thư viện CapCut không được đóng gói. CapCut tự tải lại khi mở project (cần đăng nhập; hiệu ứng Pro cần tài khoản Pro).
 - Font cài thêm trên máy chỉ được đóng gói khi dùng menu hoặc `--fonts`. Người nhận cần tự cài font.
-- Đã kiểm tra với CapCut 9.6 trên Windows. Trên macOS, vị trí thư mục project mặc định chưa được kiểm chứng; nếu không tìm thấy project, dùng `--drafts-dir`.
+- Đã kiểm tra với CapCut 9.6 trên Windows và macOS.
 
 ## Phát triển
 
@@ -93,10 +97,22 @@ python -m ccpack --help
 
 Build file chạy cho hệ điều hành đang dùng (PyInstaller không build chéo được):
 
+Cần Python 3.10 trở lên.
+
+Windows (kết quả: `dist/ccpack.exe`):
+
 ```bash
 python -m venv .venv
-.venv/Scripts/python -m pip install pyinstaller   # macOS: .venv/bin/python
-.venv/Scripts/python build.py                     # kết quả: dist/ccpack(.exe)
+.venv/Scripts/python -m pip install pyinstaller
+.venv/Scripts/python build.py
+```
+
+macOS (kết quả: `dist/ccpack`). Python có sẵn của macOS (`/usr/bin/python3`) là 3.9, quá cũ; dùng Python từ Homebrew (`brew install python`):
+
+```bash
+/opt/homebrew/bin/python3 -m venv .venv
+.venv/bin/python -m pip install pyinstaller
+.venv/bin/python build.py
 ```
 
 Phát hành bản mới: tăng `__version__` trong `ccpack/__init__.py` và `version` trong `pyproject.toml`, rồi push tag cùng số phiên bản:
