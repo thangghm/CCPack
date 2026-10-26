@@ -9,3 +9,4 @@ out/
 *.ccpack
 *.partial
 plans/
+.DS_Store
