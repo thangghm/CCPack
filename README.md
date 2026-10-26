@@ -1,143 +1,97 @@
-# CCPack - CapCut Project Packer
+# CCPack
 
-CCPack đóng gói một project CapCut (bản desktop) **cùng toàn bộ media** thành một file `.ccpack` duy nhất, để:
+English | [Tiếng Việt](README.vi.md)
 
-- **Chuyển project cho người khác** chỉnh sửa tiếp trên máy của họ.
-- **Lưu trữ project** trước khi dọn ổ cứng, mà không lo mất video, ảnh, nhạc.
+Command-line tool that packages a CapCut desktop project with all linked media into a single `.ccpack` file, and imports it into CapCut on another machine.
 
-CapCut chỉ lưu đường dẫn tới file media trên máy bạn. Vì vậy chép thư mục project sang máy khác sẽ bị báo thiếu media. CCPack gom media vào trong project, sửa lại đường dẫn, rồi đóng gói tất cả, kèm mã kiểm tra (sha256) cho từng file.
+- Collects external media into the project and rewrites paths.
+- Stores files uncompressed (ZIP64, files over 4 GB supported) with a SHA-256 checksum per file.
+- Optionally includes installed fonts.
+- Never modifies the source project.
 
-## Tính năng
+## Download
 
-- Quét project: liệt kê media, font, hiệu ứng đang dùng, báo file bị thiếu hoặc chỉ có trên cloud (Dropbox, OneDrive…).
-- Đóng gói thành file `.ccpack` (zip không nén, hỗ trợ file trên 4 GB), có thể kèm font.
-- Kiểm tra gói còn nguyên vẹn trước khi xoá media gốc.
-- Cài gói vào CapCut trên máy khác: project hiện ở đầu danh sách, mở là đủ media.
-- Không sửa project gốc.
+Get the binary for your OS from [Releases](../../releases). No Python required.
 
-## Tải về
-
-Vào mục [Releases](../../releases), tải file theo hệ điều hành:
-
-| Hệ điều hành | File |
+| OS | File |
 |---|---|
 | Windows 10/11 | `ccpack-windows-x64.exe` |
-| macOS Apple Silicon (M1/M2/M3…) | `ccpack-macos-arm64.zip` |
+| macOS Apple Silicon | `ccpack-macos-arm64.zip` |
 | macOS Intel | `ccpack-macos-x64.zip` |
 
-Không cần cài Python.
+The binaries are unsigned.
 
-- **Windows:** lần đầu chạy, SmartScreen có thể cảnh báo vì file chưa được ký số. Bấm **More info → Run anyway**.
-- **macOS:** giải nén file zip. Lần đầu chạy, macOS có thể chặn vì ứng dụng chưa được ký số. Chuột phải vào `ccpack` → **Open**, hoặc chạy `xattr -d com.apple.quarantine ccpack` trong Terminal.
+- **Windows:** if SmartScreen blocks the file, select **More info → Run anyway**.
+- **macOS:** unzip, then run `xattr -d com.apple.quarantine ccpack`, or right-click → **Open**.
 
-## Hướng dẫn sử dụng
+## Usage
 
-### Cách đơn giản (menu)
+### Menu
 
-Bấm đúp vào `ccpack`, chọn số trong menu:
-
-```
-1. Đóng gói project (để gửi người khác / lưu trữ)
-2. Cài file .ccpack vào CapCut
-3. Kiểm tra file .ccpack còn nguyên vẹn
-4. Đổi thư mục project của CapCut
-0. Thoát
-```
-
-CCPack tự dùng thư mục ở mục **Save to** trong CapCut → Settings → Draft, nên đổi nơi lưu project trong CapCut thì CCPack đổi theo. Nếu không đọc được cài đặt đó và không thấy project, CCPack sẽ hỏi thư mục (copy đường dẫn ở mục Save to rồi dán vào, hoặc kéo thư mục vào cửa sổ, rồi Enter) và nhớ cho các lần sau. Muốn đổi lại thì chọn **4**.
-
-**Người gửi**
-
-1. Trong CapCut, đóng project cần gửi (quay về màn hình Home).
-2. Mở `ccpack`, chọn **1**, chọn số thứ tự project.
-3. Chọn thư mục lưu. CCPack đóng gói rồi tự kiểm tra lại file vừa tạo.
-4. Gửi file `.ccpack` cho người nhận.
-
-**Người nhận**
-
-1. Kéo file `.ccpack` thả vào `ccpack` (hoặc mở `ccpack`, chọn **2**, kéo file vào cửa sổ rồi Enter).
-2. Nếu có font đi kèm, cài font theo đường dẫn CCPack in ra.
-3. **Tắt hẳn CapCut rồi mở lại.** CapCut chỉ nhận project mới khi khởi động. Project sẽ nằm đầu danh sách.
-
-**Lưu trữ trước khi dọn ổ cứng**
-
-1. Đóng gói project như trên.
-2. Chọn **3** để kiểm tra file `.ccpack`. Chỉ xoá media gốc khi kết quả là `OK`.
-
-### Dòng lệnh
+Run `ccpack` with no arguments, or double-click it:
 
 ```
-ccpack scan   "<tên project>"               # xem project dùng những gì
-ccpack pack   "<tên project>" [-o file.ccpack] [--fonts] [--folder] [--allow-missing] [--force]
-ccpack verify  file.ccpack                  # kiểm tra hash từng file
-ccpack unpack  file.ccpack [--name "Tên mới"] [--no-verify]
+1. Pack project
+2. Import package
+3. Verify package
+0. Quit
 ```
 
-- Trên Windows, đổi tên file tải về thành `ccpack.exe` (hoặc gõ đúng tên file) và chạy trong thư mục chứa nó.
-- `<tên project>` là tên hiển thị trong CapCut, hoặc đường dẫn tới thư mục project.
-- Dòng lệnh dùng thư mục project đã chọn trong menu, nếu chưa chọn thì dùng thư mục mặc định của CapCut. Muốn chỉ thư mục khác cho một lần chạy thì thêm `--drafts-dir` trước tên lệnh: `ccpack --drafts-dir "D:\CapCut Drafts" scan "<tên project>"`.
-- `ccpack <lệnh> --help` để xem đầy đủ tuỳ chọn.
-- Giao diện có tiếng Việt và tiếng Anh, tự chọn theo ngôn ngữ của máy. Muốn chọn khác thì thêm `--lang en` hoặc `--lang vi` (dùng được cả cho menu: `ccpack --lang en`), hoặc đặt biến môi trường `CCPACK_LANG=en`.
+| Task | Steps |
+|---|---|
+| Send a project | Close the project in CapCut (return to Home). Select **1**, then the project. The package is verified after writing. |
+| Import a project | Select **2** and drop in the `.ccpack` file (Windows: or drop it onto `ccpack.exe`). Install any bundled fonts listed in the output. |
+| Archive a project | Pack, copy the package to its destination, then select **3** on the copy. Delete source media only after `OK`. |
 
-### Lưu ý
+### Commands
 
-- Hiệu ứng, transition, sticker từ thư viện CapCut không được đóng gói. CapCut tự tải lại khi mở project (cần đăng nhập; hiệu ứng Pro cần tài khoản Pro).
-- Font cài thêm trên máy chỉ được đóng gói khi dùng menu hoặc `--fonts`. Người nhận cần tự cài font.
-- Đã kiểm tra với CapCut 9.6 trên Windows và macOS.
+```
+ccpack scan   <project> [--json]
+ccpack pack   <project> [-o OUTPUT] [--folder] [--fonts] [--allow-missing] [--force]
+ccpack verify <package>
+ccpack unpack <package> [--name NAME] [--no-verify]
+```
 
-## Phát triển
+| Command | Description |
+|---|---|
+| `scan` | List media, fonts and effects used by a project, and report missing files. |
+| `pack` | Write a `.ccpack` file (or a folder with `--folder`). |
+| `verify` | Check every file against the manifest checksums. Exit code 1 on failure. |
+| `unpack` | Verify and import a package into CapCut. A name in use gets a ` (1)`, ` (2)`… suffix. |
 
-Yêu cầu Python 3.10 trở lên, không cần thư viện ngoài.
+`<project>` is a project name or a path to a project folder. Run `ccpack <command> --help` for all options.
+
+### Projects folder
+
+Resolved in this order:
+
+1. `--drafts-dir PATH` (global option, placed before the command).
+2. CapCut **Settings → Draft → Save to**.
+3. The folder last entered at the prompt (asked when the folder is missing or empty).
+4. CapCut's default location.
+
+## Limitations
+
+- Effects, transitions and stickers from the CapCut library are not packed. CapCut downloads them again when the project opens (sign-in required; Pro assets need a Pro account).
+- Fonts are packed only from the menu or with `--fonts`.
+- Tested with CapCut 9.6 on Windows and macOS. CapCut's project format is undocumented and may change.
+
+## Build from source
+
+Requires Python 3.10 or later. Build on the OS you are targeting; PyInstaller does not cross-compile.
 
 ```bash
 git clone https://github.com/thangghm/CCPack.git
 cd CCPack
-python -m ccpack --help
-```
-
-Build file chạy cho hệ điều hành đang dùng (PyInstaller không build chéo được):
-
-Cần Python 3.10 trở lên.
-
-Windows (kết quả: `dist/ccpack.exe`):
-
-```bash
-python -m venv .venv
-.venv/Scripts/python -m pip install pyinstaller
-.venv/Scripts/python build.py
-```
-
-macOS (kết quả: `dist/ccpack`). Python có sẵn của macOS (`/usr/bin/python3`) là 3.9, quá cũ; dùng Python từ Homebrew (`brew install python`):
-
-```bash
-/opt/homebrew/bin/python3 -m venv .venv
+python3 -m venv .venv
 .venv/bin/python -m pip install pyinstaller
 .venv/bin/python build.py
 ```
 
-Phát hành bản mới: tăng `__version__` trong `ccpack/__init__.py` và `version` trong `pyproject.toml`, rồi push tag cùng số phiên bản:
+On Windows, use `python` instead of `python3` and `.venv\Scripts\python` instead of `.venv/bin/python`.
 
-```bash
-git tag v0.1.1
-git push origin v0.1.1
-```
-
-GitHub Actions sẽ build bản Windows và macOS rồi tạo Release (xem `.github/workflows/release.yml`).
-
-Cấu trúc mã nguồn:
-
-| File | Vai trò |
-|---|---|
-| `ccpack/capcut.py` | Vị trí thư mục và cấu trúc file project CapCut |
-| `ccpack/rewrite.py` | Tìm và sửa mọi đường dẫn trong file JSON của project |
-| `ccpack/scan.py` | Quét project, lập danh sách media / font / hiệu ứng |
-| `ccpack/pack.py` | Ghi file `.ccpack` và `manifest.json` |
-| `ccpack/package.py`, `verify.py`, `unpack.py` | Đọc, kiểm tra và cài gói |
-| `ccpack/cli.py`, `interactive.py` | Dòng lệnh và menu |
+Output: `dist/ccpack` (macOS) or `dist/ccpack.exe` (Windows).
 
 ## Disclaimer
 
-- CCPack là công cụ độc lập, **không liên kết, không được tài trợ hay xác nhận** bởi CapCut, ByteDance hoặc các công ty liên quan. CapCut là thương hiệu của chủ sở hữu tương ứng.
-- CCPack đọc và sửa định dạng project nội bộ của CapCut, vốn không được công bố và có thể thay đổi ở các phiên bản CapCut sau. Công cụ có thể không hoạt động đúng với phiên bản khác bản đã kiểm tra.
-- Phần mềm được cung cấp "nguyên trạng" (as is), không kèm bất kỳ bảo đảm nào. Người dùng tự chịu trách nhiệm khi sử dụng. Hãy sao lưu dữ liệu quan trọng và chạy `verify` trước khi xoá media gốc.
-- Người dùng có trách nhiệm tuân thủ bản quyền và giấy phép của media, font, nhạc và hiệu ứng trong project khi chia sẻ file `.ccpack`.
+CCPack is an independent tool, not affiliated with or endorsed by CapCut or ByteDance. It is provided "as is", without warranty. Run `verify` before deleting source media. You are responsible for the licenses of the media, fonts and music you share.
