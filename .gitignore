@@ -8,3 +8,4 @@ build.log
 out/
 *.ccpack
 *.partial
+plans/
