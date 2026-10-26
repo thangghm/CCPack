@@ -2,7 +2,7 @@
 
 [English](README.md) | Tiếng Việt
 
-Công cụ dòng lệnh đóng gói project CapCut (bản desktop) kèm toàn bộ media thành một file `.ccpack`, và cài gói đó vào CapCut trên máy khác.
+Công cụ CLI đóng gói project CapCut (bản desktop) kèm toàn bộ media thành một file `.ccpack`, để có thể cài gói đó vào CapCut trên máy khác.
 
 - Gom media bên ngoài vào project và sửa lại đường dẫn.
 - Lưu file không nén (ZIP64, hỗ trợ file trên 4 GB), kèm checksum SHA-256 cho từng file.
@@ -25,8 +25,6 @@ File chưa được ký số.
 - **macOS:** giải nén, rồi chạy `xattr -d com.apple.quarantine ccpack`, hoặc chuột phải → **Open**.
 
 ## Sử dụng
-
-Giao diện chỉ có tiếng Anh.
 
 ### Menu
 
