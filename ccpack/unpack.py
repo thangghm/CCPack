@@ -7,7 +7,6 @@ import uuid
 from dataclasses import dataclass
 
 from ccpack import capcut
-from ccpack.i18n import tr
 from ccpack.pack import CHUNK, FONTS_DIR
 from ccpack.package import Package, PackageError
 from ccpack.paths import norm
@@ -31,19 +30,13 @@ def unique_draft_name(drafts_dir: str, name: str) -> str:
 
 def unpack_package(pkg: Package, drafts_dir: str, name: str | None = None, verify=True, log=print) -> UnpackResult:
     if not os.path.isdir(drafts_dir):
-        raise PackageError(tr(f"CapCut projects folder not found: {drafts_dir}. "
-                              "Open CapCut once, or point to the folder with --drafts-dir.",
-                              f"Không thấy thư mục project của CapCut: {drafts_dir}. "
-                              "Mở CapCut một lần, hoặc chỉ định bằng --drafts-dir."))
+        raise PackageError(f"CapCut projects folder not found: {drafts_dir}. Open CapCut once, or set --drafts-dir.")
     if verify:
-        log(tr("Checking the package…", "Kiểm tra gói…"))
+        log("Verifying checksums…")
         result = verify_package(pkg, log)
         if not result.ok:
             bad, gone = len(result.corrupt), len(result.missing)
-            raise PackageError(tr(f"The package is damaged: wrong hash: {bad}, missing: {gone} "
-                                  "(run `ccpack verify` for details).",
-                                  f"Gói bị hỏng: {bad} file sai hash, {gone} file bị thiếu "
-                                  "(chạy `ccpack verify` để xem chi tiết)."))
+            raise PackageError(f"Package damaged: {bad} mismatched, {gone} missing. Run `ccpack verify` for details.")
 
     root = pkg.root
     _check_name(root)
@@ -57,7 +50,7 @@ def unpack_package(pkg: Package, drafts_dir: str, name: str | None = None, verif
     staged_draft = os.path.join(staging, "draft")
     fonts = []
     try:
-        log(tr(f"Extracting to {target}…", f"Giải nén vào {target}…"))
+        log(f"Extracting to {target}…")
         for member in sorted(pkg.names()):
             if member.startswith(root + "/"):
                 rel = member[len(root) + 1:]
@@ -70,8 +63,7 @@ def unpack_package(pkg: Package, drafts_dir: str, name: str | None = None, verif
             if rel.startswith(FONTS_DIR + "/"):
                 fonts.append(os.path.join(target, *rel.split("/")))
         if not os.path.isfile(os.path.join(staged_draft, capcut.META_FILE)):
-            raise PackageError(tr(f"The package has no {capcut.META_FILE} for the project.",
-                                  f"Gói không chứa {capcut.META_FILE} của project."))
+            raise PackageError(f"Package is missing {capcut.META_FILE}.")
         _fix_meta(staged_draft, drafts_dir, target_name)
         os.replace(staged_draft, target)
     finally:
@@ -81,13 +73,13 @@ def unpack_package(pkg: Package, drafts_dir: str, name: str | None = None, verif
 
 def _check_name(name: str):
     if not name or name.startswith(".") or any(c in name for c in "/\\:"):
-        raise PackageError(tr(f"Invalid project name: {name!r}", f"Tên project không hợp lệ: {name!r}"))
+        raise PackageError(f"Invalid project name: {name!r}")
 
 
 def _safe_join(base: str, rel: str) -> str:
     dest = os.path.normpath(os.path.join(base, *rel.split("/")))
     if os.path.commonpath([os.path.abspath(base), os.path.abspath(dest)]) != os.path.abspath(base):
-        raise PackageError(tr(f"Unsafe path in the package: {rel}", f"Gói chứa đường dẫn không an toàn: {rel}"))
+        raise PackageError(f"Unsafe path in package: {rel}")
     return dest
 
 

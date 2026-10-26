@@ -4,7 +4,6 @@ import json
 import os
 import subprocess
 
-from ccpack.i18n import tr
 from ccpack.paths import IS_WINDOWS
 
 # Same token in every draft; CapCut resolves it to the draft's own folder.
@@ -91,8 +90,7 @@ def resolve_draft(name_or_path: str, drafts_dir: str) -> str:
     for candidate in (name_or_path, os.path.join(drafts_dir, name_or_path)):
         if os.path.isfile(os.path.join(candidate, META_FILE)):
             return os.path.abspath(candidate)
-    raise DraftNotFound(tr(f"CapCut project '{name_or_path}' not found (looked in {drafts_dir}).",
-                           f"Không tìm thấy project CapCut '{name_or_path}' (đã tìm trong {drafts_dir})."))
+    raise DraftNotFound(f"Project '{name_or_path}' not found in {drafts_dir}.")
 
 
 def list_drafts(drafts_dir: str) -> list[dict]:
@@ -118,7 +116,8 @@ def is_open_in_capcut(draft_dir: str) -> bool:
 
 
 def capcut_running() -> bool:
-    """CapCut only picks up new drafts at startup, so callers warn when it is running."""
+    """CapCut 9.6 on macOS lists a new draft as soon as its Home screen is shown; other
+    versions may only pick it up at startup, so callers tell the user what to do."""
     try:
         if IS_WINDOWS:
             out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq CapCut.exe", "/NH"],

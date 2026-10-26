@@ -5,7 +5,6 @@ import os
 import time
 import zipfile
 
-from ccpack.i18n import tr
 from ccpack.pack import FORMAT, FORMAT_VERSION, MANIFEST
 
 
@@ -20,19 +19,17 @@ class Package:
         self._zip = None
         if not self.is_folder:
             if not zipfile.is_zipfile(path):
-                raise PackageError(tr(f"{path} is not a valid .ccpack file.", f"{path} không phải file .ccpack hợp lệ."))
+                raise PackageError(f"Not a valid .ccpack file: {path}")
             self._zip = zipfile.ZipFile(path)
         try:
             with self.open_member(MANIFEST) as f:
                 self.manifest = json.load(f)
         except (KeyError, FileNotFoundError, ValueError) as e:
             self.close()
-            raise PackageError(tr(f"Cannot read {MANIFEST} in {path}: {e}",
-                                  f"Không đọc được {MANIFEST} trong {path}: {e}")) from e
+            raise PackageError(f"Cannot read {MANIFEST} in {path}: {e}") from e
         if self.manifest.get("format") != FORMAT or self.manifest.get("format_version", 0) > FORMAT_VERSION:
             self.close()
-            raise PackageError(tr(f"{path} is not a ccpack package, or was made by a newer version of ccpack.",
-                                  f"{path} không phải gói ccpack, hoặc được tạo bởi phiên bản ccpack mới hơn."))
+            raise PackageError(f"Not a ccpack package, or made by a newer ccpack: {path}")
 
     def __enter__(self):
         return self

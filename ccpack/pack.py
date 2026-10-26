@@ -17,8 +17,7 @@ import zipfile
 
 from ccpack import __version__, capcut
 from ccpack.capcut import PACKED_MEDIA_DIR
-from ccpack.i18n import files, tr
-from ccpack.scan import ScanResult, human_size
+from ccpack.scan import ScanResult, files, human_size
 
 FORMAT = "ccpack"
 FORMAT_VERSION = 1
@@ -94,19 +93,13 @@ def pack_draft(scan: ScanResult, output: str, *, as_folder=False, include_fonts=
                allow_missing=False, force=False, log=print) -> dict:
     """Pack the draft described by `scan` into `output`. Returns the manifest."""
     if scan.is_open and not force:
-        raise PackError(tr("The project is open in CapCut. Close it (go back to the Home screen) and try again, "
-                           "or add --force if you are sure CapCut is not writing to it.",
-                           "Project đang mở trong CapCut. Đóng project (về màn hình Home) rồi chạy lại, "
-                           "hoặc thêm --force nếu chắc chắn CapCut không ghi vào nó."))
+        raise PackError("Project is open in CapCut. Return to Home and retry, "
+                        "or use --force if CapCut is not writing to it.")
     if scan.missing and not allow_missing:
         n = len(scan.missing)
-        raise PackError(tr(f"{files(n)} of media missing (see `ccpack scan`). "
-                           "Put them back, or add --allow-missing to pack anyway.",
-                           f"Thiếu {n} file media (xem `ccpack scan`). "
-                           "Tìm lại file, hoặc thêm --allow-missing để vẫn đóng gói."))
+        raise PackError(f"{files(n)} missing (see `ccpack scan`). Restore them, or use --allow-missing.")
     if os.path.exists(output) and not force:
-        raise PackError(tr(f"{output} already exists. Choose another name, or add --force to overwrite.",
-                           f"Đã có {output}. Chọn tên khác hoặc thêm --force để ghi đè."))
+        raise PackError(f"{output} exists. Choose another name, or use --force.")
 
     partial = output + ".partial"
     _remove(partial)
@@ -131,7 +124,7 @@ def _write_all(scan: ScanResult, writer, include_fonts, log) -> dict:
     def record(arcname, size_hash):
         files.append({"path": arcname, "size": size_hash[0], "sha256": size_hash[1]})
 
-    log(tr(f"Packing project '{root}'…", f"Đóng gói project '{root}'…"))
+    log(f"Packing '{root}'…")
     for full, rel in capcut.iter_draft_files(scan.draft_dir):
         if rel == capcut.LOCK_FILE:
             continue
